@@ -98,24 +98,10 @@ JSString _verify(JSString token, JSString alg, JSString keyPem) {
   }
 }
 
-JSString _decode(JSString token) {
-  try {
-    final jwt = JWT.decode(token.toDart);
-    return jsonEncode({
-      'ok': true,
-      'header': jwt.header,
-      'payload': jwt.payload,
-    }).toJS;
-  } catch (e) {
-    return jsonEncode({'ok': false, 'error': e.toString()}).toJS;
-  }
-}
-
 void main() {
   final api = JSObject();
   api.setProperty('sign'.toJS, _sign.toJS);
   api.setProperty('verify'.toJS, _verify.toJS);
-  api.setProperty('decode'.toJS, _decode.toJS);
   globalContext.setProperty('dartJwt'.toJS, api);
   globalContext.setProperty('__dartJwtReady'.toJS, true.toJS);
 }

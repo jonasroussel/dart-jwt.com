@@ -256,7 +256,6 @@ export default function Playground() {
   const [headerView, setHeaderView] = useState<'json' | 'claims'>('json');
   const [payloadView, setPayloadView] = useState<'json' | 'claims'>('json');
 
-  // Lazy-load the compiled Dart bundle on first mount (playground only).
   useEffect(() => {
     let cancelled = false;
     loadDartJwt()
@@ -332,7 +331,6 @@ export default function Playground() {
     };
   }, [headerText, payloadText, encPrivateKey, ready]);
 
-  // Decode + verify whenever decoder inputs change.
   useEffect(() => {
     if (mode !== 'decoder' || !ready) return;
     let cancelled = false;

@@ -6,7 +6,6 @@ type RawResult = string;
 interface DartJwt {
   sign(payloadJson: string, alg: string, keyPem: string): RawResult;
   verify(token: string, alg: string, keyPem: string): RawResult;
-  decode(token: string): RawResult;
 }
 
 declare global {
@@ -62,10 +61,6 @@ export function loadDartJwt(timeoutMs = 10000): Promise<DartJwt> {
   return loadPromise;
 }
 
-export function isDartJwtReady(): boolean {
-  return Boolean(window.dartJwt && window.__dartJwtReady);
-}
-
 function parseResult<T>(raw: string): T | { ok: false; error: string } {
   try {
     return JSON.parse(raw) as T;
@@ -91,20 +86,6 @@ export async function verify(token: string, alg: string, keyPem: string): Promis
   try {
     const api = await loadDartJwt();
     return parseResult<VerifyResult>(api.verify(token, alg, keyPem));
-  } catch (e) {
-    return { ok: false, error: (e as Error).message };
-  }
-}
-
-export async function decode(
-  token: string,
-): Promise<
-  | { ok: true; header: Record<string, unknown>; payload: Record<string, unknown> }
-  | { ok: false; error: string }
-> {
-  try {
-    const api = await loadDartJwt();
-    return parseResult(api.decode(token));
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }

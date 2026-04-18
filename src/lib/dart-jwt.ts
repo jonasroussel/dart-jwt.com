@@ -22,17 +22,56 @@ export type VerifyResult =
   | { ok: true; header: Record<string, unknown>; payload: Record<string, unknown> }
   | { ok: false; error: string };
 
-export async function waitForDartJwt(timeoutMs = 5000): Promise<DartJwt> {
-  const start = Date.now();
-  while (!window.dartJwt || !window.__dartJwtReady) {
-    if (Date.now() - start > timeoutMs) throw new Error('dart_jsonwebtoken failed to load');
-    await new Promise((r) => setTimeout(r, 50));
-  }
-  return window.dartJwt;
+let loadPromise: Promise<DartJwt> | null = null;
+
+// Inject /jwt.js on demand so the 514 KB bundle only downloads on pages that
+// actually call into it (i.e. the playground). Returns the same promise on
+// subsequent calls, then resolves once `window.dartJwt` is populated.
+export function loadDartJwt(timeoutMs = 10000): Promise<DartJwt> {
+  if (window.dartJwt && window.__dartJwtReady) return Promise.resolve(window.dartJwt);
+  if (loadPromise) return loadPromise;
+
+  loadPromise = new Promise<DartJwt>((resolve, reject) => {
+    if (!document.querySelector('script[data-dart-jwt]')) {
+      const tag = document.createElement('script');
+      tag.src = '/jwt.js';
+      tag.async = true;
+      tag.dataset.dartJwt = 'true';
+      tag.onerror = () => reject(new Error('failed to load /jwt.js'));
+      document.head.appendChild(tag);
+    }
+
+    const start = Date.now();
+    const tick = () => {
+      if (window.dartJwt && window.__dartJwtReady) {
+        resolve(window.dartJwt);
+        return;
+      }
+      if (Date.now() - start > timeoutMs) {
+        reject(new Error('dart_jsonwebtoken load timed out'));
+        return;
+      }
+      setTimeout(tick, 50);
+    };
+    tick();
+  }).catch((err) => {
+    loadPromise = null;
+    throw err;
+  });
+
+  return loadPromise;
 }
 
 export function isDartJwtReady(): boolean {
   return Boolean(window.dartJwt && window.__dartJwtReady);
+}
+
+function parseResult<T>(raw: string): T | { ok: false; error: string } {
+  try {
+    return JSON.parse(raw) as T;
+  } catch (e) {
+    return { ok: false, error: `malformed response from dart_jsonwebtoken: ${String(e)}` };
+  }
 }
 
 export async function sign(
@@ -40,13 +79,21 @@ export async function sign(
   alg: string,
   keyPem: string,
 ): Promise<SignResult> {
-  const api = await waitForDartJwt();
-  return JSON.parse(api.sign(JSON.stringify(payload), alg, keyPem)) as SignResult;
+  try {
+    const api = await loadDartJwt();
+    return parseResult<SignResult>(api.sign(JSON.stringify(payload), alg, keyPem));
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
 }
 
 export async function verify(token: string, alg: string, keyPem: string): Promise<VerifyResult> {
-  const api = await waitForDartJwt();
-  return JSON.parse(api.verify(token, alg, keyPem)) as VerifyResult;
+  try {
+    const api = await loadDartJwt();
+    return parseResult<VerifyResult>(api.verify(token, alg, keyPem));
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
 }
 
 export async function decode(
@@ -55,6 +102,10 @@ export async function decode(
   | { ok: true; header: Record<string, unknown>; payload: Record<string, unknown> }
   | { ok: false; error: string }
 > {
-  const api = await waitForDartJwt();
-  return JSON.parse(api.decode(token));
+  try {
+    const api = await loadDartJwt();
+    return parseResult(api.decode(token));
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
 }

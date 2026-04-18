@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { sign as dartSign, verify as dartVerify, isDartJwtReady } from '../lib/dart-jwt';
+import { sign as dartSign, verify as dartVerify, loadDartJwt } from '../lib/dart-jwt';
 import { EXAMPLE_KEYS, isHmac } from '../lib/example-keys';
 
 const makeDefaultPayload = () => {
@@ -222,10 +222,13 @@ const Panel = ({
   );
 };
 
+type LoadState = 'loading' | 'ready' | 'error';
+
 export default function Playground() {
   const [mode, setMode] = useState<'decoder' | 'encoder'>('decoder');
   const [alg, setAlg] = useState('HS256');
-  const [ready, setReady] = useState(false);
+  const [loadState, setLoadState] = useState<LoadState>('loading');
+  const ready = loadState === 'ready';
 
   const [headerText, setHeaderText] = useState(
     JSON.stringify({ alg: 'HS256', typ: 'JWT' }, null, 2),
@@ -253,19 +256,19 @@ export default function Playground() {
   const [headerView, setHeaderView] = useState<'json' | 'claims'>('json');
   const [payloadView, setPayloadView] = useState<'json' | 'claims'>('json');
 
-  // Poll for the compiled Dart library to finish loading.
+  // Lazy-load the compiled Dart bundle on first mount (playground only).
   useEffect(() => {
-    if (isDartJwtReady()) {
-      setReady(true);
-      return;
-    }
-    const id = setInterval(() => {
-      if (isDartJwtReady()) {
-        setReady(true);
-        clearInterval(id);
-      }
-    }, 80);
-    return () => clearInterval(id);
+    let cancelled = false;
+    loadDartJwt()
+      .then(() => {
+        if (!cancelled) setLoadState('ready');
+      })
+      .catch(() => {
+        if (!cancelled) setLoadState('error');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // When alg changes: sync header.alg + auto-load example keys for that family.
@@ -394,8 +397,10 @@ export default function Playground() {
         : 'SecretKey';
 
   const onAlgChange = (next: string) => {
+    // Re-enable key auto-swap for the new family, but preserve the decoder
+    // token's dirty flag — if the user pasted a token to verify, changing
+    // alg must not wipe it.
     userEditedKeyRef.current = false;
-    decodeTokenDirtyRef.current = false;
     setAlg(next);
   };
 
@@ -425,7 +430,12 @@ export default function Playground() {
             JWT Encoder
           </button>
           <div className="pgx-tabs-spacer"></div>
-          {!ready && <span className="pgx-meta">loading dart…</span>}
+          {loadState === 'loading' && <span className="pgx-meta">loading dart…</span>}
+          {loadState === 'error' && (
+            <span className="pgx-meta" style={{ color: 'var(--red)' }}>
+              dart load failed — refresh?
+            </span>
+          )}
           <span className="pgx-meta">alg</span>
           <select className="pg-select" value={alg} onChange={(e) => onAlgChange(e.target.value)}>
             <optgroup label="HMAC">
@@ -612,7 +622,10 @@ export default function Playground() {
                   <>
                     <span className="tok-kw">final</span> key ={' '}
                     <span className="tok-type">SecretKey</span>(
-                    <span className="tok-str">'{decPublicKey}'</span>);
+                    <span className="tok-str">
+                      {`'${decPublicKey.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`}
+                    </span>
+                    );
                   </>
                 ) : (
                   <>

@@ -11,5 +11,6 @@ pnpm-debug.log*
 dart_wrapper/.dart_tool/
 dart_wrapper/.packages
 dart_wrapper/pubspec.lock
+public/jwt.js
 public/jwt.js.deps
 public/jwt.js.map

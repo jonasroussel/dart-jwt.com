@@ -7,7 +7,7 @@
     "predev": "[ -f public/jwt.js ] || npm run build:dart",
     "dev": "astro dev",
     "start": "astro dev",
-    "prebuild": "npm run build:dart",
+    "prebuild": "[ -f public/jwt.js ] || npm run build:dart",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",

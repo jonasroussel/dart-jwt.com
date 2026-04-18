@@ -1,2 +1,8 @@
 node_modules/
 dist/
+.astro/
+dart_wrapper/.dart_tool/
+dart_wrapper/pubspec.lock
+public/jwt.js
+public/jwt.js.map
+public/jwt.js.deps

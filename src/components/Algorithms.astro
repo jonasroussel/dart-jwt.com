@@ -1,0 +1,129 @@
+---
+type Cell = { id: string; curve?: string };
+
+const FAMILIES: {
+  key: string;
+  name: string;
+  keyType: string;
+  desc: string;
+  cells: Record<string, Cell>;
+}[] = [
+  {
+    key: "HMAC",
+    name: "HMAC",
+    keyType: "symmetric secret",
+    desc: "Fast shared-secret signatures",
+    cells: {
+      "256": { id: "HS256" },
+      "384": { id: "HS384" },
+      "512": { id: "HS512" },
+    },
+  },
+  {
+    key: "RSA",
+    name: "RSA",
+    keyType: "PKCS#1 v1.5",
+    desc: "Classic asymmetric signatures",
+    cells: {
+      "256": { id: "RS256" },
+      "384": { id: "RS384" },
+      "512": { id: "RS512" },
+    },
+  },
+  {
+    key: "RSA-PSS",
+    name: "RSA-PSS",
+    keyType: "probabilistic",
+    desc: "Modern RSA with random salt",
+    cells: {
+      "256": { id: "PS256" },
+      "384": { id: "PS384" },
+      "512": { id: "PS512" },
+    },
+  },
+  {
+    key: "ECDSA",
+    name: "ECDSA",
+    keyType: "elliptic curve",
+    desc: "Compact signatures, NIST curves",
+    cells: {
+      "256": { id: "ES256", curve: "P-256" },
+      "384": { id: "ES384", curve: "P-384" },
+      "512": { id: "ES512", curve: "P-521" },
+      bitcoin: { id: "ES256K", curve: "secp256k1" },
+    },
+  },
+  {
+    key: "EdDSA",
+    name: "EdDSA",
+    keyType: "edwards curve",
+    desc: "State-of-the-art, deterministic",
+    cells: {
+      "512": { id: "EdDSA", curve: "ed25519" },
+    },
+  },
+];
+
+const COLS: { key: string; label: string; sub: string }[] = [
+  { key: "256", label: "SHA-256", sub: "standard" },
+  { key: "384", label: "SHA-384", sub: "stronger" },
+  { key: "512", label: "SHA-512", sub: "strongest" },
+  { key: "bitcoin", label: "secp256k1", sub: "bitcoin curve" },
+];
+---
+
+<section class="section page" id="algorithms">
+  <div class="heading-cluster">
+    <div class="section-label">§ algorithms</div>
+    <h2 class="section-title">14 signing algorithms. Pick your threat model.</h2>
+    <p class="section-subtitle">
+      Families on rows, hash sizes on columns. Cross-reference to find the algorithm identifier you
+      need — every cell is supported.
+    </p>
+  </div>
+  <div class="algo-table-wrap">
+    <table class="algo-table">
+      <thead>
+        <tr>
+          <th class="algo-th-family">
+            <div class="algo-th-corner">
+              <span class="algo-th-corner-col">hash →</span>
+              <span class="algo-th-corner-row">↓ family</span>
+            </div>
+          </th>
+          {
+            COLS.map((c) => (
+              <th class="algo-th">
+                <div class="algo-th-label">{c.label}</div>
+                <div class="algo-th-sub">{c.sub}</div>
+              </th>
+            ))
+          }
+        </tr>
+      </thead>
+      <tbody>
+        {
+          FAMILIES.map((f) => (
+            <tr>
+              <th class="algo-row-head">
+                <div class="algo-family-name">{f.name}</div>
+                <div class="algo-family-meta">{f.keyType}</div>
+                <div class="algo-family-desc">{f.desc}</div>
+              </th>
+              {COLS.map((c) => {
+                const cell = f.cells[c.key];
+                if (!cell) return <td class="algo-cell algo-cell-empty">—</td>;
+                return (
+                  <td class="algo-cell algo-cell-on">
+                    <div class="algo-cell-id">{cell.id}</div>
+                    {cell.curve && <div class="algo-cell-meta">{cell.curve}</div>}
+                  </td>
+                );
+              })}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

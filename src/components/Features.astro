@@ -1,0 +1,56 @@
+---
+const FEATURES = [
+  {
+    num: "001",
+    title: "All standard algorithms",
+    desc: "14 algorithms covered: HMAC (256/384/512), RSA-PKCS1, RSA-PSS, ECDSA (incl. secp256k1), and EdDSA on ed25519.",
+  },
+  {
+    num: "002",
+    title: "Symmetric & asymmetric keys",
+    desc: "Load secrets, PEM private keys or public keys from certificates. Sane constructors, typed errors.",
+  },
+  {
+    num: "003",
+    title: "Typed exceptions",
+    desc: "JWTExpiredException, JWTInvalidException, JWTParseException — pattern-match in your control flow.",
+  },
+  {
+    num: "004",
+    title: "Claim helpers",
+    desc: "First-class support for iss, sub, aud, exp, nbf, iat and jti. Validated at verify time.",
+  },
+  {
+    num: "005",
+    title: "Zero ceremony",
+    desc: "One import, one factory. Sign a token in four lines, verify one in three. No configuration object tree.",
+  },
+  {
+    num: "006",
+    title: "Runs everywhere Dart does",
+    desc: "Flutter mobile, Flutter web, Dart VM server, Dart CLI. Single pub.dev package, cross-platform.",
+  },
+];
+---
+
+<section class="section page" id="features">
+  <div class="heading-cluster">
+    <div class="section-label">§ capabilities</div>
+    <h2 class="section-title">Ships with everything the spec requires.</h2>
+    <p class="section-subtitle">
+      RFC 7519 compliant. The only JWT library you need for anything written in Dart — from Flutter
+      apps to backend services.
+    </p>
+  </div>
+  <div class="features">
+    {
+      FEATURES.map((f) => (
+        <div class="feature">
+          <div class="feature-num">{f.num} —</div>
+          <div class="feature-title">{f.title}</div>
+          <div class="feature-desc">{f.desc}</div>
+        </div>
+      ))
+    }
+  </div>
+</section>

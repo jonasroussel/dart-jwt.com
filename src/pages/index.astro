@@ -1,0 +1,26 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Nav from "../components/Nav.astro";
+import Features from "../components/Features.astro";
+import Algorithms from "../components/Algorithms.astro";
+import Social from "../components/Social.astro";
+import Footer from "../components/Footer.astro";
+import Hero from "../components/Hero.tsx";
+import Quickstart from "../components/Quickstart.tsx";
+import Playground from "../components/Playground.tsx";
+import Faq from "../components/Faq.tsx";
+import Tweaks from "../components/Tweaks.tsx";
+---
+
+<BaseLayout>
+  <Nav />
+  <Hero client:load />
+  <Quickstart client:visible />
+  <Features />
+  <Algorithms />
+  <Playground client:visible />
+  <Social />
+  <Faq client:visible />
+  <Footer />
+  <Tweaks client:idle />
+</BaseLayout>

@@ -113,8 +113,9 @@ export default function Quickstart() {
         <div className="section-label">§ quickstart</div>
         <h2 className="section-title">Three functions and keys. That's the whole API.</h2>
         <p className="section-subtitle">
-          Everything you need to issue, inspect and authenticate tokens. The rest of your auth code
-          just uses them.
+          <span className="mono">sign</span>, <span className="mono">decode</span>,{' '}
+          <span className="mono">verify</span> — one call each, no setup, no boilerplate. Pick an
+          algorithm, pass your key, ship.
         </p>
       </div>
 

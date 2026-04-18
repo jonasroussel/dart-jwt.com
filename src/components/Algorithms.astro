@@ -77,8 +77,10 @@ const COLS: { key: string; label: string; sub: string }[] = [
     <div class="section-label">§ algorithms</div>
     <h2 class="section-title">14 signing algorithms. Pick your threat model.</h2>
     <p class="section-subtitle">
-      Families on rows, hash sizes on columns. Cross-reference to find the algorithm identifier you
-      need — every cell is supported.
+      Full coverage of the JWA spec (RFC 7518) and the EdDSA extension (RFC 8037) — HMAC, RSA,
+      RSA-PSS, ECDSA and EdDSA. Whatever your stack already trusts, <span class="mono"
+        >dart_jsonwebtoken</span
+      > signs and verifies it out of the box.
     </p>
   </div>
   <div class="algo-table-wrap">

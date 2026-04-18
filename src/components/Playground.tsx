@@ -271,7 +271,8 @@ export default function Playground() {
   }, []);
 
   // When alg changes: sync header.alg + auto-load example keys for that family.
-  const userEditedKeyRef = useRef(false);
+  const encKeyDirtyRef = useRef(false);
+  const decKeyDirtyRef = useRef(false);
   useEffect(() => {
     try {
       const h = JSON.parse(headerText);
@@ -281,9 +282,9 @@ export default function Playground() {
       }
     } catch {}
     const preset = EXAMPLE_KEYS[alg];
-    if (preset && !userEditedKeyRef.current) {
-      setEncPrivateKey(preset.private);
-      setDecPublicKey(preset.public);
+    if (preset) {
+      if (!encKeyDirtyRef.current) setEncPrivateKey(preset.private);
+      if (!decKeyDirtyRef.current) setDecPublicKey(preset.public);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alg]);
@@ -398,7 +399,8 @@ export default function Playground() {
     // Re-enable key auto-swap for the new family, but preserve the decoder
     // token's dirty flag — if the user pasted a token to verify, changing
     // alg must not wipe it.
-    userEditedKeyRef.current = false;
+    encKeyDirtyRef.current = false;
+    decKeyDirtyRef.current = false;
     setAlg(next);
   };
 
@@ -486,7 +488,7 @@ export default function Playground() {
                 }}
               >
                 <span>{decStatus.valid ? '✓' : '✗'}</span>
-                <span>{decStatus.valid ? 'Valid JWT' : decStatus.msg}</span>
+                <span>{decStatus.valid ? 'Well-formed JWT' : decStatus.msg}</span>
               </div>
               {decStatus.signed !== null && (
                 <div className={`pgx-valid ${decStatus.signed ? 'ok' : 'err'}`}>
@@ -539,7 +541,7 @@ export default function Playground() {
                   className={`pgx-textarea ${isHmac(alg) ? 'pgx-secret-input' : 'pgx-json-input'}`}
                   value={decPublicKey}
                   onChange={(e) => {
-                    userEditedKeyRef.current = true;
+                    decKeyDirtyRef.current = true;
                     setDecPublicKey(e.target.value);
                   }}
                   spellCheck={false}
@@ -592,7 +594,7 @@ export default function Playground() {
                   className={`pgx-textarea ${isHmac(alg) ? 'pgx-secret-input' : 'pgx-json-input'}`}
                   value={encPrivateKey}
                   onChange={(e) => {
-                    userEditedKeyRef.current = true;
+                    encKeyDirtyRef.current = true;
                     setEncPrivateKey(e.target.value);
                   }}
                   spellCheck={false}

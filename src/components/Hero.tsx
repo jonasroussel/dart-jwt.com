@@ -12,31 +12,40 @@ const HERO_SCRIPT: Step[] = [
     kind: 'code',
     lines: [
       [C('// Build, sign and verify — all in one file.')],
-      [K('final'), V(' jwt '), P('= '), T('JWT'), P('({')],
-      [V("  'sub'"), P(': '), S("'user_42'"), P(',')],
-      [V("  'iss'"), P(': '), S("'jonasroussel.com'"), P(',')],
+      [K('final'), V(' jwt '), P('= '), T('JWT'), P('(')],
       [
-        V("  'exp'"),
+        P('  {'),
+        S("'id'"),
         P(': '),
-        T('DateTime'),
+        N('42'),
+        P(', '),
+        S("'role'"),
+        P(': '),
+        S("'admin'"),
+        P('},'),
+      ],
+      [V('  issuer'), P(': '), S("'jonasroussel.com'"), P(',')],
+      [V('  subject'), P(': '), S("'user_42'"), P(',')],
+      [P(');')],
+      [{ t: '' }],
+      [K('final'), V(' key '), P('= '), T('SecretKey'), P('('), S("'my-secret'"), P(');')],
+      [
+        K('final'),
+        V(' token '),
+        P('= '),
+        V('jwt'),
         P('.'),
-        F('now'),
-        P('().'),
-        F('add'),
-        P('('),
+        F('sign'),
+        P('(key, '),
+        V('expiresIn'),
+        P(': '),
         T('Duration'),
         P('('),
         V('hours'),
         P(': '),
         N('24'),
-        P(')).'),
-        F('millisecondsSinceEpoch'),
-        P('),'),
+        P('));'),
       ],
-      [P('});')],
-      [{ t: '' }],
-      [K('final'), V(' key '), P('= '), T('SecretKey'), P('('), S("'my-secret'"), P(');')],
-      [K('final'), V(' token '), P('= '), V('jwt'), P('.'), F('sign'), P('(key);')],
       [{ t: '' }],
       [K('final'), V(' verified '), P('= '), T('JWT'), P('.'), F('verify'), P('(token, key);')],
       [F('print'), P('('), S("'payload: "), V('${verified.payload}'), S("'"), P(');')],
@@ -75,7 +84,8 @@ export default function Hero() {
       }, 38);
       return () => clearInterval(id);
     }
-    const id = setTimeout(() => setStep((s) => s + 1), 600);
+    const delay = item.kind === 'run-out' ? 200 : 600;
+    const id = setTimeout(() => setStep((s) => s + 1), delay);
     return () => clearTimeout(id);
   }, [step]);
 
@@ -126,7 +136,7 @@ export default function Hero() {
           <div style={{ color: 'var(--fg-dim)', marginTop: 4 }}>
             payload:{' '}
             <span style={{ color: 'var(--fg)' }}>
-              {'{ sub: user_42, iss: jonasroussel.com, exp: 1745251200 }'}
+              {`{ id: 42, role: admin, iss: jonasroussel.com, sub: user_42, exp: ${Math.floor(Date.now() / 1000) + 24 * 60 * 60} }`}
             </span>
           </div>
           {done && (
@@ -165,8 +175,8 @@ export default function Hero() {
             for <span className="accent">Dart</span>, done right.
           </h1>
           <p className="tagline">
-            Sign, decode and verify JWTs with every standard algorithm — HMAC, RSA, RSA-PSS, ECDSA
-            and EdDSA. One import, zero ceremony.
+            An easy-to-use JWT (RFC 7519) implementation for Dart. Sign, decode and verify — every
+            standard algorithm, in just a few lines.
           </p>
           <div className="hero-actions">
             <a href="#quickstart" className="btn btn-primary">
@@ -219,7 +229,7 @@ export default function Hero() {
             <div
               className="term-body"
               style={{
-                height: 525,
+                height: 540,
                 overflow: 'auto',
                 width: '100%',
                 minWidth: 0,

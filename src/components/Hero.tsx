@@ -13,17 +13,7 @@ const HERO_SCRIPT: Step[] = [
     lines: [
       [C('// Build, sign and verify — all in one file.')],
       [K('final'), V(' jwt '), P('= '), T('JWT'), P('(')],
-      [
-        P('  {'),
-        S("'id'"),
-        P(': '),
-        N('42'),
-        P(', '),
-        S("'role'"),
-        P(': '),
-        S("'admin'"),
-        P('},'),
-      ],
+      [P('  {'), S("'id'"), P(': '), N('42'), P(', '), S("'role'"), P(': '), S("'admin'"), P('},')],
       [V('  issuer'), P(': '), S("'jonasroussel.com'"), P(',')],
       [V('  subject'), P(': '), S("'user_42'"), P(',')],
       [P(');')],
@@ -195,7 +185,7 @@ export default function Hero() {
           </div>
           <div className="hero-meta">
             <div>
-              <strong>800k+</strong> downloads
+              <strong>800K+</strong> downloads
             </div>
             <div>
               <strong>357</strong> likes

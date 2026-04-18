@@ -8,3 +8,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+dart_wrapper/.dart_tool/
+dart_wrapper/.packages
+dart_wrapper/pubspec.lock
+public/jwt.js.deps
+public/jwt.js.map

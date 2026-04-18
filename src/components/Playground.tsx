@@ -1,15 +1,28 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { b64urlEncode, b64urlDecode, hmacSign } from '../lib/shared';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { sign as dartSign, verify as dartVerify, isDartJwtReady } from '../lib/dart-jwt';
+import { EXAMPLE_KEYS, isHmac } from '../lib/example-keys';
 
-const DEFAULT_PAYLOAD_OBJ = {
-  sub: '1234567890',
-  name: 'Ada Lovelace',
-  iss: 'jonasroussel.com',
-  iat: 1745251200,
-  exp: 1745337600,
-  admin: true,
+const makeDefaultPayload = () => {
+  const now = Math.floor(Date.now() / 1000);
+  return {
+    sub: '1234567890',
+    name: 'Ada Lovelace',
+    iss: 'jonasroussel.com',
+    iat: now,
+    exp: now + 24 * 60 * 60,
+    admin: true,
+  };
 };
-const DEFAULT_SECRET = 'a-string-secret-at-least-256-bits-long';
+
+const b64urlDecode = (str: string): string => {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  try {
+    return decodeURIComponent(escape(atob(str)));
+  } catch {
+    return atob(str);
+  }
+};
 
 const JsonView = ({ obj, type }: { obj: unknown; type: 'header' | 'payload' }) => {
   if (!obj) return null;
@@ -212,17 +225,22 @@ const Panel = ({
 export default function Playground() {
   const [mode, setMode] = useState<'decoder' | 'encoder'>('decoder');
   const [alg, setAlg] = useState('HS256');
+  const [ready, setReady] = useState(false);
 
   const [headerText, setHeaderText] = useState(
     JSON.stringify({ alg: 'HS256', typ: 'JWT' }, null, 2),
   );
-  const [payloadText, setPayloadText] = useState(JSON.stringify(DEFAULT_PAYLOAD_OBJ, null, 2));
-  const [encSecret, setEncSecret] = useState(DEFAULT_SECRET);
+  const [payloadText, setPayloadText] = useState(() =>
+    JSON.stringify(makeDefaultPayload(), null, 2),
+  );
+  const [encPrivateKey, setEncPrivateKey] = useState(EXAMPLE_KEYS.HS256.private);
   const [encodedToken, setEncodedToken] = useState('');
-  const [encStatus, setEncStatus] = useState({ header: true, payload: true, secret: true });
+  const [encStatus, setEncStatus] = useState({ header: true, payload: true, key: true });
+  const [encError, setEncError] = useState<string | null>(null);
 
   const [decodeToken, setDecodeToken] = useState('');
-  const [decSecret, setDecSecret] = useState(DEFAULT_SECRET);
+  const decodeTokenDirtyRef = useRef(false);
+  const [decPublicKey, setDecPublicKey] = useState(EXAMPLE_KEYS.HS256.public);
   const [decoded, setDecoded] = useState<{
     header: Record<string, unknown> | null;
     payload: Record<string, unknown> | null;
@@ -235,6 +253,23 @@ export default function Playground() {
   const [headerView, setHeaderView] = useState<'json' | 'claims'>('json');
   const [payloadView, setPayloadView] = useState<'json' | 'claims'>('json');
 
+  // Poll for the compiled Dart library to finish loading.
+  useEffect(() => {
+    if (isDartJwtReady()) {
+      setReady(true);
+      return;
+    }
+    const id = setInterval(() => {
+      if (isDartJwtReady()) {
+        setReady(true);
+        clearInterval(id);
+      }
+    }, 80);
+    return () => clearInterval(id);
+  }, []);
+
+  // When alg changes: sync header.alg + auto-load example keys for that family.
+  const userEditedKeyRef = useRef(false);
   useEffect(() => {
     try {
       const h = JSON.parse(headerText);
@@ -243,11 +278,18 @@ export default function Playground() {
         setHeaderText(JSON.stringify(next, null, 2));
       }
     } catch {}
+    const preset = EXAMPLE_KEYS[alg];
+    if (preset && !userEditedKeyRef.current) {
+      setEncPrivateKey(preset.private);
+      setDecPublicKey(preset.public);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alg]);
 
+  // Sign whenever encoder inputs change (runs in both modes so the decoder
+  // token stays in sync with the current alg/key unless the user has edited it).
   useEffect(() => {
-    if (mode !== 'encoder') return;
+    if (!ready) return;
     let cancelled = false;
     let hOk = true;
     let pOk = true;
@@ -263,51 +305,33 @@ export default function Playground() {
     } catch {
       pOk = false;
     }
-    setEncStatus({ header: hOk, payload: pOk, secret: encSecret.length > 0 });
+    setEncStatus({ header: hOk, payload: pOk, key: encPrivateKey.trim().length > 0 });
     if (!hOk || !pOk || !h || !p) {
       setEncodedToken('');
+      setEncError(null);
       return;
     }
+    const useAlg = (h.alg as string) || 'HS256';
     (async () => {
-      const useAlg = (h!.alg as string) || 'HS256';
-      const hb = b64urlEncode(JSON.stringify(h));
-      const pb = b64urlEncode(JSON.stringify(p));
-      if (!/^HS(256|384|512)$/.test(useAlg)) {
-        if (!cancelled) setEncodedToken(`${hb}.${pb}.<sign-with-${useAlg}-key-in-dart>`);
-        return;
-      }
-      try {
-        const sig = await hmacSign(useAlg, encSecret, `${hb}.${pb}`);
-        if (!cancelled) setEncodedToken(`${hb}.${pb}.${sig}`);
-      } catch {
-        if (!cancelled) setEncodedToken('');
+      const res = await dartSign(p!, useAlg, encPrivateKey);
+      if (cancelled) return;
+      if (res.ok) {
+        setEncodedToken(res.token);
+        setEncError(null);
+        if (!decodeTokenDirtyRef.current) setDecodeToken(res.token);
+      } else {
+        setEncodedToken('');
+        setEncError(res.error);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [headerText, payloadText, encSecret, mode]);
+  }, [headerText, payloadText, encPrivateKey, ready]);
 
+  // Decode + verify whenever decoder inputs change.
   useEffect(() => {
-    if (mode === 'decoder' && !decodeToken && encodedToken) {
-      setDecodeToken(encodedToken);
-    }
-  }, [mode, encodedToken, decodeToken]);
-
-  useEffect(() => {
-    (async () => {
-      const h = { alg: 'HS256', typ: 'JWT' };
-      const hb = b64urlEncode(JSON.stringify(h));
-      const pb = b64urlEncode(JSON.stringify(DEFAULT_PAYLOAD_OBJ));
-      const sig = await hmacSign('HS256', DEFAULT_SECRET, `${hb}.${pb}`);
-      const tok = `${hb}.${pb}.${sig}`;
-      setEncodedToken(tok);
-      setDecodeToken(tok);
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (mode !== 'decoder') return;
+    if (mode !== 'decoder' || !ready) return;
     let cancelled = false;
     const t = decodeToken.trim();
     if (!t) {
@@ -340,29 +364,40 @@ export default function Playground() {
       return;
     }
     const useAlg = (header.alg as string) || 'HS256';
-    if (!/^HS(256|384|512)$/.test(useAlg)) {
-      setDecStatus({ valid: true, signed: null, msg: `alg ${useAlg} — verify in your Dart code` });
-      return;
-    }
     (async () => {
-      try {
-        const expected = await hmacSign(useAlg, decSecret, `${parts[0]}.${parts[1]}`);
-        if (cancelled) return;
-        const ok = expected === parts[2];
-        setDecStatus({
-          valid: true,
-          signed: ok,
-          msg: ok ? `signature verified · ${useAlg}` : 'signature mismatch — wrong secret?',
-        });
-      } catch {
-        if (cancelled) return;
-        setDecStatus({ valid: true, signed: false, msg: 'signature error' });
+      const res = await dartVerify(t, useAlg, decPublicKey);
+      if (cancelled) return;
+      if (res.ok) {
+        setDecStatus({ valid: true, signed: true, msg: `signature verified · ${useAlg}` });
+      } else {
+        setDecStatus({ valid: true, signed: false, msg: res.error });
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [decodeToken, decSecret, mode]);
+  }, [decodeToken, decPublicKey, mode, ready]);
+
+  const algFamilyLabel = isHmac(alg) ? 'Secret' : 'PEM Key';
+  const keyLabelEncoder = isHmac(alg) ? 'Shared secret' : 'Private key (PEM)';
+  const keyLabelDecoder = isHmac(alg) ? 'Shared secret' : 'Public key (PEM)';
+
+  const isEd = alg === 'EdDSA';
+  const isEcdsa = alg.startsWith('E') && !isEd;
+  const isRsaFamily = alg.startsWith('R') || alg.startsWith('P');
+  const pubKeyType = isEd
+    ? 'EdDSAPublicKey'
+    : isEcdsa
+      ? 'ECPublicKey'
+      : isRsaFamily
+        ? 'RSAPublicKey'
+        : 'SecretKey';
+
+  const onAlgChange = (next: string) => {
+    userEditedKeyRef.current = false;
+    decodeTokenDirtyRef.current = false;
+    setAlg(next);
+  };
 
   return (
     <section className="section page" id="playground">
@@ -370,9 +405,8 @@ export default function Playground() {
         <div className="section-label">§ playground</div>
         <h2 className="section-title">Decode and encode JWTs, live.</h2>
         <p className="section-subtitle">
-          A real JWT encoder & verifier running in your browser. HMAC algorithms are signed and
-          verified live; RSA, RSA-PSS, ECDSA and EdDSA render the wire shape — sign them for real
-          with the Dart library.
+          The real <span className="mono">dart_jsonwebtoken</span> package running in your browser —
+          compiled to JavaScript. Sign and verify with every algorithm the library supports.
         </p>
       </div>
 
@@ -391,8 +425,9 @@ export default function Playground() {
             JWT Encoder
           </button>
           <div className="pgx-tabs-spacer"></div>
+          {!ready && <span className="pgx-meta">loading dart…</span>}
           <span className="pgx-meta">alg</span>
-          <select className="pg-select" value={alg} onChange={(e) => setAlg(e.target.value)}>
+          <select className="pg-select" value={alg} onChange={(e) => onAlgChange(e.target.value)}>
             <optgroup label="HMAC">
               <option>HS256</option>
               <option>HS384</option>
@@ -426,7 +461,10 @@ export default function Playground() {
               <textarea
                 className="pgx-textarea pgx-token-input"
                 value={decodeToken}
-                onChange={(e) => setDecodeToken(e.target.value)}
+                onChange={(e) => {
+                  decodeTokenDirtyRef.current = true;
+                  setDecodeToken(e.target.value);
+                }}
                 spellCheck={false}
                 placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
               />
@@ -487,13 +525,17 @@ export default function Playground() {
                 )}
               </Panel>
 
-              <Panel color="signature" title="JWT Signature Verification">
-                <div className="pgx-secret-label">Secret used to sign — paste yours to verify:</div>
+              <Panel color="signature" title={`${algFamilyLabel} — verify`}>
+                <div className="pgx-secret-label">{keyLabelDecoder}:</div>
                 <textarea
-                  className="pgx-textarea pgx-secret-input"
-                  value={decSecret}
-                  onChange={(e) => setDecSecret(e.target.value)}
+                  className={`pgx-textarea ${isHmac(alg) ? 'pgx-secret-input' : 'pgx-json-input'}`}
+                  value={decPublicKey}
+                  onChange={(e) => {
+                    userEditedKeyRef.current = true;
+                    setDecPublicKey(e.target.value);
+                  }}
                   spellCheck={false}
+                  rows={isHmac(alg) ? 2 : 8}
                 />
               </Panel>
             </div>
@@ -533,21 +575,32 @@ export default function Playground() {
 
               <Panel
                 color="signature"
-                title="Sign JWT — Secret"
-                valid={encStatus.secret}
-                validLabel={encStatus.secret ? 'Valid secret' : 'Empty secret'}
+                title={`Sign JWT — ${algFamilyLabel}`}
+                valid={encStatus.key}
+                validLabel={encStatus.key ? `Valid ${keyLabelEncoder.toLowerCase()}` : 'Empty key'}
               >
+                <div className="pgx-secret-label">{keyLabelEncoder}:</div>
                 <textarea
-                  className="pgx-textarea pgx-secret-input"
-                  value={encSecret}
-                  onChange={(e) => setEncSecret(e.target.value)}
+                  className={`pgx-textarea ${isHmac(alg) ? 'pgx-secret-input' : 'pgx-json-input'}`}
+                  value={encPrivateKey}
+                  onChange={(e) => {
+                    userEditedKeyRef.current = true;
+                    setEncPrivateKey(e.target.value);
+                  }}
                   spellCheck={false}
+                  rows={isHmac(alg) ? 2 : 9}
                 />
               </Panel>
             </div>
 
             <Panel color="mixed" title="JWT Signature — Encoded JWT" copyText={encodedToken}>
               <SegmentedToken token={encodedToken} />
+              {encError && (
+                <div className="pgx-valid err" style={{ marginTop: 12 }}>
+                  <span>✗</span>
+                  <span>{encError}</span>
+                </div>
+              )}
               <div className="pgx-secret-label" style={{ marginTop: 18 }}>
                 Use it in your Dart code:
               </div>
@@ -555,12 +608,51 @@ export default function Playground() {
                 <span className="tok-kw">import</span>{' '}
                 <span className="tok-str">'package:dart_jsonwebtoken/dart_jsonwebtoken.dart'</span>;
                 {'\n\n'}
-                <span className="tok-kw">final</span> key ={' '}
-                <span className="tok-type">SecretKey</span>(
-                <span className="tok-str">'{encSecret || 'your-secret'}'</span>);{'\n'}
+                {isHmac(alg) ? (
+                  <>
+                    <span className="tok-kw">final</span> key ={' '}
+                    <span className="tok-type">SecretKey</span>(
+                    <span className="tok-str">'{decPublicKey}'</span>);
+                  </>
+                ) : (
+                  <>
+                    <span className="tok-kw">final</span> pem ={' '}
+                    <span className="tok-str">{`'''\n${decPublicKey}\n'''`}</span>;{'\n'}
+                    <span className="tok-kw">final</span> key ={' '}
+                    {isEd ? (
+                      <>
+                        <span className="tok-type">EdDSAPublicKey</span>.
+                        <span className="tok-fn">fromPEM</span>(pem)
+                      </>
+                    ) : (
+                      <>
+                        <span className="tok-type">{pubKeyType}</span>(pem)
+                      </>
+                    )}
+                    ;
+                  </>
+                )}
+                {'\n\n'}
+                <span className="tok-kw">try</span> {'{'}
+                {'\n'}
+                {'  '}
                 <span className="tok-kw">final</span> jwt = <span className="tok-type">JWT</span>.
-                <span className="tok-fn">verify</span>(token, key);{'\n\n'}
-                <span className="tok-fn">print</span>(jwt.payload);
+                <span className="tok-fn">verify</span>(token, key);{'\n'}
+                {'  '}
+                <span className="tok-fn">print</span>(jwt.payload);{'\n'}
+                {'}'} <span className="tok-kw">on</span>{' '}
+                <span className="tok-type">JWTExpiredException</span> {'{'}
+                {'\n'}
+                {'  '}
+                <span className="tok-fn">print</span>(<span className="tok-str">'jwt expired'</span>
+                );{'\n'}
+                {'}'} <span className="tok-kw">on</span>{' '}
+                <span className="tok-type">JWTException</span> <span className="tok-kw">catch</span>{' '}
+                (ex) {'{'}
+                {'\n'}
+                {'  '}
+                <span className="tok-fn">print</span>(ex.message);{'\n'}
+                {'}'}
               </pre>
             </Panel>
           </div>

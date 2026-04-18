@@ -1,0 +1,10 @@
+name: dart_jwt_wrapper
+description: JS interop wrapper around dart_jsonwebtoken for the playground.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  dart_jsonwebtoken: ^3.4.0

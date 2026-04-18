@@ -10,11 +10,13 @@
     "preview": "astro preview",
     "astro": "astro",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "build:dart": "cd dart_wrapper && dart pub get && dart compile js -O2 -o ../public/jwt.js web/jwt.dart"
   },
   "dependencies": {
     "@astrojs/react": "^3.6.2",
     "astro": "^4.16.0",
+    "jose": "^6.2.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

@@ -13,7 +13,8 @@
     "astro": "astro",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "build:dart": "cd dart_wrapper && dart pub get && dart compile js -O2 -o ../public/jwt.js web/jwt.dart"
+    "build:dart": "cd dart_wrapper && dart pub get && dart compile js -O2 -o ../public/jwt.js web/jwt.dart",
+    "icons": "node scripts/gen-icons.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^3.6.2",
@@ -22,6 +23,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "prettier": "^3.8.3",

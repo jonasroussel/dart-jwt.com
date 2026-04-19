@@ -26,9 +26,10 @@ function renderSvg(svg, pngRelPath, width) {
 }
 
 // apple-touch-icon: reuse favicon.svg but strip the baked rounded corners.
-// iOS applies its own ~22% corner-radius mask on the home screen. Baking in
-// a smaller radius would leave transparent slivers between our rounding and
-// iOS's — so we render the apple-touch as a full-bleed square and let iOS round it.
+// iOS applies its own squircle corner mask on the home screen (commonly
+// approximated as ~22% radius). Baking in a smaller radius would leave
+// transparent slivers between our rounding and iOS's — so we render the
+// apple-touch as a full-bleed square and let iOS round it.
 const faviconSvg = readFileSync(resolve(root, 'public/favicon.svg'), 'utf8');
 const appleTouchSvg = faviconSvg.replace(/rx="12"/g, 'rx="0"');
 renderSvg(appleTouchSvg, 'public/apple-touch-icon.png', 180);

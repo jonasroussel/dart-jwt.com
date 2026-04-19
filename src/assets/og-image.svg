@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- Dark background (matches site bg) -->
+  <rect width="1200" height="630" fill="#0a0b0d"/>
+
+  <!-- Corner registration marks (echoes Hero terminal reg corners) -->
+  <g stroke="#7dff9e" stroke-width="1.5" fill="none" stroke-linecap="square" opacity="0.6">
+    <path d="M40 80 L40 40 L80 40"/>
+    <path d="M1120 590 L1160 590 L1160 550"/>
+  </g>
+
+  <!-- Mark: 320x320 at (100, 155). Scale 320/64 = 5. No dark bg rect since canvas is already dark. -->
+  <g transform="translate(100 155) scale(5)">
+    <path fill="none" stroke="#7dff9e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+          d="M12 14 Q6 14 6 20 L6 28 Q6 32 3 32 Q6 32 6 36 L6 44 Q6 50 12 50"/>
+    <rect x="14" y="24" width="10" height="16" rx="2" fill="#7dff9e" fill-opacity="0.4"/>
+    <circle cx="26" cy="32" r="1.5" fill="#7dff9e"/>
+    <rect x="28" y="24" width="10" height="16" rx="2" fill="#7dff9e"/>
+    <circle cx="40" cy="32" r="1.5" fill="#7dff9e"/>
+    <rect x="42" y="24" width="10" height="16" rx="2" fill="#7dff9e" fill-opacity="0.65"/>
+    <path fill="none" stroke="#7dff9e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+          d="M52 14 Q58 14 58 20 L58 28 Q58 32 61 32 Q58 32 58 36 L58 44 Q58 50 52 50"/>
+  </g>
+
+  <!-- Wordmark: $ dart_jsonwebtoken, Plex Mono SemiBold 56px -->
+  <text x="480" y="270" font-family="IBM Plex Mono" font-weight="600" font-size="56" fill="#e8eaed">
+    <tspan fill="#7dff9e">$</tspan> dart_jsonwebtoken
+  </text>
+
+  <!-- Tagline: Plex Sans Regular 32px, three lines, line-height 44 -->
+  <text font-family="IBM Plex Sans" font-weight="400" font-size="32" fill="#9aa0a6">
+    <tspan x="480" y="340">The real Dart package, compiled to JS,</tspan>
+    <tspan x="480" y="384">running in your browser. 14 algorithms.</tspan>
+    <tspan x="480" y="428">Sign. Verify. Decode.</tspan>
+  </text>
+</svg>

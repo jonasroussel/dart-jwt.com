@@ -157,7 +157,7 @@ export default function Hero() {
         <div>
           <div className="chip">
             <span className="chip-dot"></span>
-            <span>v3.4.0 · null-safe · all algorithms</span>
+            <span>v3.4.1 · null-safe · all algorithms</span>
           </div>
           <h1>
             JSON Web Tokens
@@ -188,7 +188,7 @@ export default function Hero() {
               <strong>800K+</strong> downloads
             </div>
             <div>
-              <strong>357</strong> likes
+              <strong>358</strong> likes
             </div>
             <div>
               <strong>MIT</strong> licensed

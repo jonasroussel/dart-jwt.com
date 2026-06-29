@@ -3,10 +3,11 @@
 // Source: pub.dev/api/packages/dart_jsonwebtoken/metrics (weeklyVersionDownloads.totalWeeklyDownloads,
 // reversed to chronological order).
 const CHART_DATA = [
-  60242, 64554, 58806, 65578, 63474, 67299, 65893, 68892, 67905, 75854, 69402, 69094, 73377, 69583,
-  76680, 75281, 75590, 80055, 78490, 80763, 86860, 85920, 84185, 87082, 95600, 97676, 101472, 96135,
-  100369, 95700, 103461, 126968, 87106, 69420, 115834, 132438, 127621, 131700, 135501, 149561,
-  142538, 162364, 172277, 178179, 179927, 188780, 179710, 176156, 191456, 198034, 202144, 201959,
+  65367, 72402, 73819, 69609, 70157, 73334, 70019, 76119, 75629, 76248, 81082, 76901, 84029, 86854,
+  84140, 85566, 89970, 92782, 100297, 99366, 100119, 95212, 97062, 107542, 123972, 78723, 72439,
+  127085, 128846, 128749, 132064, 137682, 150159, 143243, 165957, 172520, 176490, 180204, 191825,
+  173732, 180580, 196071, 195943, 198010, 207490, 206428, 224020, 205654, 246339, 245377, 236598,
+  251512,
 ];
 
 const w = 600;
@@ -41,15 +42,15 @@ const area = `${path} L${last[0]},${h} L${first[0]},${h} Z`;
       <div class="stat-card">
         <div class="stat-label">30-day downloads</div>
         <div class="stat-value">
-          <span>800K</span>
+          <span>1M</span>
           <span class="accent">+</span>
-          <span class="stat-delta">↑ 6.3%</span>
+          <span class="stat-delta">↑ 16.1%</span>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-label">pub.dev likes</div>
         <div class="stat-value">
-          <span>358</span>
+          <span>360</span>
           <span class="stat-delta">↑ this month</span>
         </div>
       </div>
@@ -64,7 +65,7 @@ const area = `${path} L${last[0]},${h} L${first[0]},${h} Z`;
     <div class="chart-card">
       <div class="chart-head">
         <div class="chart-title">weekly downloads · last 12 months</div>
-        <div class="chart-range">2025.05 → 2026.05</div>
+        <div class="chart-range">2025.06 → 2026.06</div>
       </div>
       <svg viewBox={`0 0 ${w} ${h}`} class="chart-svg" preserveAspectRatio="none">
         <defs>
@@ -88,9 +89,9 @@ const area = `${path} L${last[0]},${h} L${first[0]},${h} Z`;
       <div
         style="display:flex; justify-content:space-between; margin-top:12px; font-family:var(--font-mono); font-size:11px; color:var(--fg-mute);"
       >
-        <span>may 2025</span>
-        <span>nov 2025</span>
-        <span>may 2026</span>
+        <span>jun 2025</span>
+        <span>dec 2025</span>
+        <span>jun 2026</span>
       </div>
     </div>
   </div>

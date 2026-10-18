@@ -185,7 +185,7 @@ export default function Hero() {
           </div>
           <div className="hero-meta">
             <div>
-              <strong>1M+</strong> downloads
+              <strong>2M+</strong> downloads
             </div>
             <div>
               <strong>360</strong> likes
